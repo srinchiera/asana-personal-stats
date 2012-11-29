@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Graphs</title>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+
+      // Load the Visualization API and the piechart package.
+      google.load('visualization', '1.0', {'packages':['corechart']});
+
+      // Set a callback to run when the Google Visualization API is loaded.
+      google.setOnLoadCallback(drawCharts);
+
+      function drawCharts() {
+        drawTasksCompleted();
+        drawRemainingTasks();
+        drawTotalFollowers();
+      }
+
+      function drawTasksCompleted() {
+        var options = {
+          'title':'Tasks Completed per Day',
+          'height': 450,
+          'width': 600
+        };
+        var data = new google.visualization.DataTable();
+        data.addColumn('date', 'Date');
+        data.addColumn('number', 'Completed Tasks');
+        data.addRows({{ &completedTasks }});
+        var chart = new google.visualization.LineChart(document.getElementById('tasksCompletedDiv'));
+        chart.draw(data, options);
+      }
+
+      function drawRemainingTasks() {
+        var options = {
+          'title':'Remaining Tasks',
+          'height': 450,
+          'width': 600
+        };
+
+        var data = new google.visualization.DataTable();
+        data.addColumn('date', 'Date');
+        data.addColumn('number', 'Remaining Tasks');
+        data.addRows({{ &remainingTasks }});
+        var chart = new google.visualization.LineChart(document.getElementById('remainingTasksDiv'));
+        chart.draw(data, options);
+
+      }
+
+      function drawTotalFollowers() {
+        var options = {
+          'title':'Total Followers on All Tasks',
+          'height': 450,
+          'width': 600
+        };
+
+        var data = new google.visualization.DataTable();
+        data.addColumn('date', 'Date');
+        data.addColumn('number', 'Total Followers');
+        data.addRows({{ &followers }});
+        var chart = new google.visualization.LineChart(document.getElementById('totalFollowersDiv'));
+        chart.draw(data, options);
+
+      }
+
+    </script>
+  </head>
+  <body>
+    <h1>Your Asana Progress</h1>
+    <div id="tasksCompletedDiv" style="width: 600px; height: 450px;"></div>
+    <div id="remainingTasksDiv" style="width: 600px; height: 450px;"></div>
+    <div id="totalFollowersDiv" style="width: 600px; height: 450px;"></div>
+  </body>
+</html>
