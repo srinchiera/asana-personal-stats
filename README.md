@@ -16,3 +16,8 @@ To run:
 
 Then point your browser at:
 http://localhost:8888/
+
+Be careful! This application queries all tasks in a workspace. If there are
+over 100 you will exceed the API limit. As of now there are no error checks so
+this is bad. Before adding metrics, it would be wise to refactor and make it
+more robust.
