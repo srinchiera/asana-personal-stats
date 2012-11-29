@@ -15,13 +15,12 @@ function render(response, request) {
   workspaceId = queryData.workspaceId;
 
   taskList = [];
-
   dateObject = {};
+
   now = new Date();
   today = new Date (now.getFullYear(), now.getMonth(), now.getDate());
   thirtyDaysAgo =  (new Date(today)).setDate(-30);
   dateList = populateDates(today, thirtyDaysAgo, dateObject);
-  console.log(dateObject);
 
   /*
   TODO, add story statistics
@@ -34,9 +33,8 @@ function render(response, request) {
         getTaskDetails(item, taskList, callback);
       }, function(err){
         console.log("Successfully fetched all tasks.")
-        console.log("Agregating task statistics.")
         agregateStats(taskList, dateObject, today, thirtyDaysAgo);
-        renderHtml(response);
+        renderHtml(response,  dateObject);
      });
   });
 }
@@ -45,13 +43,19 @@ function populateDates(start, end, dateObject) {
     var current = new Date(start);
 
     while (current >= end) {
-        dateObject[current.valueOf()] = {"completedTasks": 0};
+        dateObject[current.valueOf()] =
+          {"completedTasks": 0,
+           "completedSubtasks": 0,
+           "remainingTasks": 0,
+           "followers": 0};
         current.setDate(current.getDate() - 1);
     }
 
 }
 
 function agregateStats(taskList, dateObject, today, thirtyDaysAgo) {
+
+  console.log("Agregating task statistics.")
 
   // tasks that are still open, or have been completed in the last 30 days
   taskList = __.filter(taskList, function(task) {
@@ -63,22 +67,52 @@ function agregateStats(taskList, dateObject, today, thirtyDaysAgo) {
     return true;
   });
 
-  // get all tasks completed on some date
-  getCompletedTasks(taskList, dateObject);
+  // calculate statistics and store into dateObject
+  calculateData(taskList, dateObject);
+
 }
 
-function getCompletedTasks(taskList, dateObject){
+function calculateData(taskList, dateObject){
+
+  /* TODO
+   * - Subtasks completed doesn't work yet
+   *    - Need to pull subtasks seperately for each task
+   * - Average time to complete tasks;
+   * - Average time to complete subtasks;
+   * - Percentage of completed tasks vs open tasks;
+   * - Distinct followers;
+   * - Number of projects I belong to
+   * - Numer of days early / late user completed from due date
+   */
 
   __.each(taskList, function(task) {
+
+    // put completed task in appropiate array slot
     if (task.data.completed) {
-      console.log("completed task");
-      date = roundToDay(new Date(task.data.completed_at));
-      console.log("completed task on: " + new Date(date).toString());
-      dateObject[date.valueOf()].completedTasks++;
+
+      dateCompleted = roundToDay(new Date(task.data.completed_at));
+      // check if task or subtask
+      console.log(task.data.parent);
+      if (!task.data.parent) {
+        dateObject[dateCompleted.valueOf()].completedTasks++;
+      } else {
+        dateObject[dateCompleted.valueOf()].completedSubtasks++;
+      }
+    } else {
+        dateCreated = roundToDay(new Date(task.data.created_at));
+        numFollowers = task.data.followers.length;
+
+        // TODO: modify to traverse dict backwards
+        for (var d in dateObject) {
+          if (dateCreated.valueOf() <= d) {
+            dateObject[d].remainingTasks++;
+            dateObject[d].followers += numFollowers;
+            // TODO: num distinct followers
+          }
+        }
     }
   });
 
-  console.log(dateObject);
 }
 
 // This code is very repetetive, refactor!
@@ -164,16 +198,41 @@ function getTasks(apiKey, workspaceId, response, callback) {
 
 }
 
-function renderHtml(response) {
-  list = [['Year', 'Sales'],['2004',  1000],['2005',  1170],['2006',  660],['2007',  1030]];
-  data = {"tasksCompleted": JSON.stringify(list)};
+function renderHtml(response, dateObject) {
+  formattedData = formatData(dateObject);
 
   fs.readFile("graphs.html",function(err,template) {
         response.writeHead(200, {'Content-Type': 'text/html'});
         template = template.toString();
-        response.write(mustache.to_html(template, data));
+        response.write(mustache.to_html(template, formattedData));
         response.end()
    })
+}
+
+function formatData(dateObject) {
+  formattedData = {};
+  formattedStringData = {};
+
+  for (var key in dateObject) {
+    for (var stat in dateObject[key]) {
+      formattedData[stat] = [];
+    }
+    break;
+  };
+
+  for (var key in dateObject) {
+    for (var stat in dateObject[key]) {
+      formattedData[stat].push(["new Date(" + key + ")",dateObject[key][stat]]);
+    }
+  }
+
+  for (var key in dateObject) {
+    for (var stat in dateObject[key]) {
+      formattedStringData[stat] = JSON.stringify(formattedData[stat]).replace(/\"/g, '');
+    }
+  }
+
+  return formattedStringData;
 }
 
 function roundToDay(date) {
