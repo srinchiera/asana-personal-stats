@@ -1,6 +1,7 @@
 var url = require('url');
 var http = require('http');
 var https = require('https');
+
 /*
 var exec = require("child_process").exec,
     querystring = require("querystring"),
@@ -44,7 +45,7 @@ function getWorkspaces(response, request) {
     return;
   }
 
-  console.log("Received request for API key: " + apiKey);
+  console.log("Received request with API key: " + apiKey);
 
   var options = {
     host: 'app.asana.com',
@@ -64,7 +65,6 @@ function getWorkspaces(response, request) {
 
       html = getWorkspaceListHtml(str, apiKey);
 
-      console.log(html);
       response.writeHead(200, {"Content-Type": "text/html"});
       response.write(html);
       response.end();
@@ -72,7 +72,7 @@ function getWorkspaces(response, request) {
     });
   }
 
-  console.log("Sending API request");
+  console.log("Sending API request for user with key: " + apiKey);
   var req = https.request(options, callback);
   req.end()
 
@@ -80,7 +80,6 @@ function getWorkspaces(response, request) {
 
 function getWorkspaceListHtml(userInfo, apiKey) {
   console.log("parsing API reponse");
-  userId = JSON.parse(userInfo).data.id;
   workspaces = JSON.parse(userInfo).data.workspaces;
 
   workspaceInput = '';
@@ -101,7 +100,6 @@ function getWorkspaceListHtml(userInfo, apiKey) {
     '<body>'+
     '<form action="/render" method="get">'+
     workspaceInput +
-    '<input type="hidden" name="userId" value="' + userId + '"/>' +
     '<input type="hidden" name="apiKey" value="' + apiKey+ '"/>' +
     '<input type="submit" value="Render Stats"/>'+
     '</form>'+
@@ -109,6 +107,7 @@ function getWorkspaceListHtml(userInfo, apiKey) {
     '</html>';
 
   return html;
+
 }
 
 function makeid()
